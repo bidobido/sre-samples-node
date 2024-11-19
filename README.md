@@ -290,7 +290,51 @@ Aumentar quantidade de chamadas simultâneas e avaliar o comportamento.
 
 
 ```
-// INSIRA SUA ANÁLISE OU PARECER ABAIXO
+const express = require('express');
+const { bulkhead } = require('cockatiel');
+
+const app = express();
+const port = 8080;
+
+const bulkheadPolicy = bulkhead(5);
+
+async function externalService() {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve('Resposta da chamada externa');
+        }, 2000);
+    });
+}
+
+app.get('/api/bulkhead', async (req, res) => {
+    try {
+        const result = await bulkheadPolicy.execute(() => externalService());
+        res.send(result);
+    } catch (error) {
+        res.status(500).send(`Erro: ${error.message}`);
+    }
+});
+
+async function simulateBulkhead() {
+    const axios = require('axios');
+    console.log('Iniciando requisições simultâneas...');
+    const requests = [];
+    for (let i = 1; i <= 10; i++) {
+        requests.push(
+            axios.get(`http://localhost:${port}/api/bulkhead`)
+                .then((response) => console.log(`Requisição ${i}: ${response.data}`))
+                .catch((error) => console.error(`Requisição ${i}: ${error.response.data}`))
+        );
+    }
+    await Promise.all(requests);
+    console.log('Simulação concluída.');
+}
+
+app.listen(port, () => {
+    console.log(`Servidor rodando em http://localhost:${port}`);
+    simulateBulkhead();
+});
+
 
 
 
