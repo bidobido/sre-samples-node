@@ -180,9 +180,52 @@ Alterar limite de requisições permitidas para 100 num intervalo de 1 minuto e 
 
 
 ```
-// INSIRA SUA ANÁLISE OU PARECER ABAIXO
+const express = require('express');
+const rateLimit = require('express-rate-limit');
 
+const app = express();
+const port = 8080;
 
+const limiter = rateLimit({
+    windowMs: 60 * 1000,  
+    max: 100,  
+    message: 'Você excedeu o limite de requisições, tente novamente mais tarde.',
+});
+
+app.use(limiter);
+
+async function externalService() {
+    return 'Resposta da chamada externa';
+}
+
+app.get('/api/ratelimit', async (req, res) => {
+    try {
+        const result = await externalService();
+        res.send(result);
+    } catch (error) {
+        res.status(500).send(`Erro: ${error.message}`);
+    }
+});
+
+async function simulateRateLimit() {
+    const axios = require('axios'); 
+
+    console.log('Iniciando requisições...');
+    for (let i = 1; i <= 105; i++) { 
+        try {
+            const response = await axios.get(`http://localhost:${port}/api/ratelimit`);
+            console.log(`Requisição ${i}: ${response.data}`);
+        } catch (error) {
+            console.error(`Requisição ${i}: ${error.response.data}`);
+        }
+    }
+    console.log('Simulação concluída.');
+}
+
+app.listen(port, () => {
+    console.log(`Servidor rodando em http://localhost:${port}`);
+    simulateRateLimit(); 
+});
 
 ```
 
