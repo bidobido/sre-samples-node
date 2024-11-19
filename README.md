@@ -111,7 +111,9 @@ Ajustar configurações de timeout e corrigir erro de timeout execedido ao invoc
 ![Screen Shot 2024-09-13 at 21 42 04](https://github.com/user-attachments/assets/a451d1a1-ef3f-4116-8ab0-246d6548b7a3)
 
 ```
-// INSIRA SUA ANÁLISE OU PARECER ABAIXO
+// A solução mais simples para o desafio seria aumentar o limite para 5 segundos.
+
+const result = await timeoutPromise(5000, externalService());
 
 
 
