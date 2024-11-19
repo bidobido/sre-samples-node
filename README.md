@@ -415,7 +415,52 @@ Ajustar o o percentual de falhas para que o circuit breaker obtenha sucesso ao r
 Observar comportamento do circuito no console.
 
 ```
-// INSIRA SUA ANÁLISE OU PARECER ABAIXO
+const express = require('express');
+const CircuitBreaker = require('opossum');
+
+const app = express();
+const port = 8080;
+
+async function externalService() {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            const shouldFail = Math.random() > 0.2;  // 20% de falha
+            if (shouldFail) {
+                reject(new Error('Falha na chamada externa'));
+            } else {
+                resolve('Resposta da chamada externa');
+            }
+        }, 2000);
+    });
+}
+
+const breaker = new CircuitBreaker(externalService, {
+    timeout: 3000,
+    errorThresholdPercentage: 20,  // Circuito mais sensível
+    resetTimeout: 10000,
+});
+
+breaker.fallback(() => 'Resposta do fallback...');
+breaker.on('open', () => console.log('Circuito aberto!'));
+breaker.on('halfOpen', () => console.log('Circuito meio aberto, testando...'));
+breaker.on('close', () => console.log('Circuito fechado novamente'));
+breaker.on('reject', () => console.log('Requisição rejeitada pelo Circuit Breaker'));
+breaker.on('failure', () => console.log('Falha registrada pelo Circuit Breaker'));
+breaker.on('success', () => console.log('Sucesso registrado pelo Circuit Breaker'));
+
+app.get('/api/circuitbreaker', async (req, res) => {
+    try {
+        const result = await breaker.fire();
+        res.send(result);
+    } catch (error) {
+        res.status(500).send(`Erro: ${error.message}`);
+    }
+});
+
+app.listen(port, () => {
+    console.log(`Servidor rodando em http://localhost:${port}`);
+});
+
 
 
 
